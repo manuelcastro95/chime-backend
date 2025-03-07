@@ -33,6 +33,20 @@ const MEETING_EXPIRY_MINUTES = 60; // Las reuniones expiran después de cierto t
 // Almacenar múltiples reuniones
 let meetings = {};
 
+app.get("/prueba", (req, res) => {
+    const htmlResponse = `
+      <html>
+        <head>
+          <title>Endpoints Chime</title>
+        </head>
+        <body>
+          <h1>Endpoints Chime</h1>
+        </body>
+      </html>
+    `;
+    res.send(htmlResponse);
+});
+
 app.get("/", (req, res) => {
     const htmlResponse = `
       <html>
