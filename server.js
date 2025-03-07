@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
 
 
 app.use(cors({
-    origin: 'http://localhost:5173', // URL de tu frontend (Vite usa 5173 por defecto)
+    origin: 'https://chime-frontend-pied.vercel.app', // URL de tu frontend (Vite usa 5173 por defecto)
     methods: ['GET', 'POST', 'DELETE'], // Añadir DELETE a los métodos permitidos
     allowedHeaders: ['Content-Type']
 }));
