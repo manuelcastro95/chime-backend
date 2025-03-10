@@ -10,11 +10,7 @@ const {
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-    origin: 'http://localhost:5173', // URL de tu frontend (Vite usa 5173 por defecto)
-    methods: ['GET', 'POST', 'DELETE'], // Añadir DELETE a los métodos permitidos
-    allowedHeaders: ['Content-Type']
-}));
+app.use(cors());
 
 // Configurar Amazon Chime SDK Meetings
 const chimeClient = new ChimeSDKMeetingsClient({ 
@@ -32,6 +28,36 @@ const MEETING_EXPIRY_MINUTES = 60; // Las reuniones expiran después de cierto t
 
 // Almacenar múltiples reuniones
 let meetings = {};
+
+app.get("/prueba", (req, res) => {
+    const htmlResponse = `
+      <html>
+        <head>
+          <title>Endpoints Chime</title>
+        </head>
+        <body>
+          <h1>Endpoints Chime</h1>
+        </body>
+      </html>
+    `;
+    res.send(htmlResponse);
+});
+
+app.get("/", (req, res) => {
+    const htmlResponse = `
+      <html>
+        <head>
+          <title>Endpoints Chime</title>
+        </head>
+        <body>
+          <h1>Endpoints Chime</h1>
+        </body>
+      </html>
+    `;
+    res.send(htmlResponse);
+});
+
+
 
 // Endpoint para listar reuniones disponibles
 app.get('/list-meetings', (req, res) => {
