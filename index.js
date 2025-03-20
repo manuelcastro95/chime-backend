@@ -167,11 +167,12 @@ app.post('/create-meeting', async (req, res) => {
         // Guardar la información de la reunión
         meetings[meetingId] = {
             meetingId,
-            Meeting: meetingResponse.Meeting, // Guardar el objeto Meeting completo
+            Meeting: meetingResponse.Meeting,
             creationTime: new Date().toISOString(),
             attendees: {},
             transcriptionEnabled: false,
-            creatorId: userId // Guardar el ID del creador
+            creatorId: userId,
+            transcripts: [] // Array para almacenar las transcripciones
         };
         
         console.log(`✅ Reunión creada: ${meetingId}, Creador: ${userId}`);
@@ -504,6 +505,128 @@ app.get('/verify-aws-permissions', async (req, res) => {
     } catch (error) {
         console.error('Error al verificar permisos de AWS:', error);
         res.status(500).json({ error: 'Error al verificar permisos de AWS: ' + error.message });
+    }
+});
+
+// Endpoint para recibir fragmentos de transcripción
+app.post('/add-transcript', (req, res) => {
+    try {
+        const { meetingId, transcript, timestamp, attendeeId } = req.body;
+        
+        if (!meetingId || !meetings[meetingId]) {
+            return res.status(404).json({ error: 'Reunión no encontrada' });
+        }
+        
+        // Inicializar el array de transcripciones si no existe
+        if (!meetings[meetingId].transcripts) {
+            meetings[meetingId].transcripts = [];
+        }
+        
+        // Añadir el fragmento de transcripción
+        meetings[meetingId].transcripts.push({
+            text: transcript,
+            timestamp: timestamp || new Date().toISOString(),
+            attendeeId: attendeeId || 'unknown'
+        });
+        
+        console.log(`✅ Fragmento de transcripción añadido a la reunión: ${meetingId}`);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error al añadir transcripción:', error);
+        res.status(500).json({ error: 'Error al añadir transcripción: ' + error.message });
+    }
+});
+
+// Endpoint para guardar transcripción
+app.post('/save-transcription', async (req, res) => {
+    try {
+        const { meetingId, title } = req.body;
+        
+        if (!meetingId || !meetings[meetingId]) {
+            return res.status(404).json({ error: 'Reunión no encontrada' });
+        }
+        
+        // Verificar si hay transcripciones para guardar
+        if (!meetings[meetingId].transcriptions || meetings[meetingId].transcriptions.length === 0) {
+            return res.status(400).json({ error: 'No hay transcripciones para guardar' });
+        }
+        
+        // Crear un objeto con la información de la transcripción
+        const transcriptionData = {
+            id: Date.now().toString(), // ID único basado en timestamp
+            meetingId,
+            title: title || `Reunión del ${new Date().toLocaleDateString()}`,
+            date: new Date().toISOString(),
+            participants: Object.values(meetings[meetingId].attendees || {}),
+            participantCount: Object.keys(meetings[meetingId].attendees || {}).length,
+            transcripts: meetings[meetingId].transcriptions
+        };
+        
+        // Aquí puedes implementar la lógica para guardar en una base de datos
+        // Por ahora, lo guardaremos en memoria
+        if (!global.savedTranscriptions) {
+            global.savedTranscriptions = [];
+        }
+        
+        global.savedTranscriptions.push(transcriptionData);
+        
+        console.log(`✅ Transcripción guardada para la reunión: ${meetingId}`);
+        res.json({ 
+            success: true, 
+            message: 'Transcripción guardada correctamente',
+            transcriptionId: transcriptionData.id
+        });
+    } catch (error) {
+        console.error('Error al guardar transcripción:', error);
+        res.status(500).json({ error: 'Error al guardar transcripción: ' + error.message });
+    }
+});
+
+// Endpoint para obtener todas las transcripciones guardadas
+app.get('/transcriptions', (req, res) => {
+    try {
+        // Si no hay transcripciones guardadas, devolver un array vacío
+        if (!global.savedTranscriptions) {
+            global.savedTranscriptions = [];
+        }
+        
+        // Devolver solo la información básica de cada transcripción
+        const transcriptionsList = global.savedTranscriptions.map(t => ({
+            id: t.id,
+            title: t.title,
+            date: t.date,
+            meetingId: t.meetingId,
+            participantCount: t.participantCount
+        }));
+        
+        res.json(transcriptionsList);
+    } catch (error) {
+        console.error('Error al obtener transcripciones:', error);
+        res.status(500).json({ error: 'Error al obtener transcripciones: ' + error.message });
+    }
+});
+
+// Endpoint para obtener una transcripción específica
+app.get('/transcription/:id', (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Si no hay transcripciones guardadas, devolver error
+        if (!global.savedTranscriptions) {
+            return res.status(404).json({ error: 'No hay transcripciones guardadas' });
+        }
+        
+        // Buscar la transcripción por ID
+        const transcription = global.savedTranscriptions.find(t => t.id === id);
+        
+        if (!transcription) {
+            return res.status(404).json({ error: 'Transcripción no encontrada' });
+        }
+        
+        res.json(transcription);
+    } catch (error) {
+        console.error('Error al obtener transcripción:', error);
+        res.status(500).json({ error: 'Error al obtener transcripción: ' + error.message });
     }
 });
 
